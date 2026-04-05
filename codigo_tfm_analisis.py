@@ -280,6 +280,7 @@ def entrenar_modelos_base(X_train, X_test, y_train, y_test):
             'accuracy': accuracy_score(y_test, y_pred),
             'precision': precision_score(y_test, y_pred),
             'recall': recall_score(y_test, y_pred),
+            'specificity': recall_score(y_test, y_pred, pos_label=0),  # Especificidad
             'f1': f1_score(y_test, y_pred),
             'auc': roc_auc_score(y_test, y_prob),
             'mcc': matthews_corrcoef(y_test, y_pred),
@@ -287,12 +288,13 @@ def entrenar_modelos_base(X_train, X_test, y_train, y_test):
             'y_prob': y_prob
         }
         
-        print(f"Accuracy:  {resultados[nombre]['accuracy']:.4f}")
-        print(f"Precision: {resultados[nombre]['precision']:.4f}")
-        print(f"Recall:    {resultados[nombre]['recall']:.4f}")
-        print(f"F1-Score:  {resultados[nombre]['f1']:.4f}")
-        print(f"AUC-ROC:   {resultados[nombre]['auc']:.4f}")
-        print(f"MCC:       {resultados[nombre]['mcc']:.4f}")
+        print(f"Accuracy:     {resultados[nombre]['accuracy']:.4f}")
+        print(f"Precision:    {resultados[nombre]['precision']:.4f}")
+        print(f"Recall:       {resultados[nombre]['recall']:.4f}")
+        print(f"Specificity:  {resultados[nombre]['specificity']:.4f}")
+        print(f"F1-Score:     {resultados[nombre]['f1']:.4f}")
+        print(f"AUC-ROC:      {resultados[nombre]['auc']:.4f}")
+        print(f"MCC:          {resultados[nombre]['mcc']:.4f}")
     
     return resultados
 
@@ -424,11 +426,11 @@ def figura_comparacion_metricas(resultados, titulo='Comparación de Métricas',
     """
     Figura 5: Comparación visual de métricas de rendimiento entre modelos.
     """
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 3, figsize=(16, 12))
     axes = axes.flatten()
     
-    metricas = ['accuracy', 'precision', 'recall', 'f1', 'auc', 'mcc']
-    titulos = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'AUC-ROC', 'MCC']
+    metricas = ['accuracy', 'precision', 'recall', 'specificity', 'f1', 'auc', 'mcc']
+    titulos = ['Accuracy', 'Precision', 'Recall', 'Especificidad', 'F1-Score', 'AUC-ROC', 'MCC']
     
     modelos = list(resultados.keys())
     colores = plt.cm.Set3(np.linspace(0, 1, len(modelos)))
@@ -446,6 +448,10 @@ def figura_comparacion_metricas(resultados, titulo='Comparación de Métricas',
         for bar, val in zip(bars, valores):
             ax.text(val + 0.02, bar.get_y() + bar.get_height()/2,
                    f'{val:.3f}', va='center', fontsize=8)
+    
+    # Ocultar subplots vacíos
+    for j in range(len(metricas), len(axes)):
+        axes[j].axis('off')
     
     plt.suptitle(f'5. {titulo}', fontsize=14, fontweight='bold', y=1.02)
     plt.tight_layout()
@@ -570,7 +576,7 @@ def figura_importancia_gini(modelo, feature_names, save_path='figura7_importanci
     ax.set_yticklabels([feature_names[i] for i in indices])
     ax.invert_yaxis()
     ax.set_xlabel('Importancia de Gini', fontsize=11)
-    ax.set_title('7. Importancia de Variables (Sin SMOTE/SFS)\nRandom Forest - Criterio Gini', 
+    ax.set_title('7. Importancia de Variables (Sin SMOTE/SFS)\nRandom Forest - Gini Criterion', 
                  fontsize=13, fontweight='bold')
     
     # Añadir porcentajes
@@ -590,11 +596,11 @@ def figura_comparacion_smote(resultados_sin, resultados_con,
     """
     Figura 8: Comparación de rendimiento: Sin vs Con SMOTE/SFS.
     """
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 3, figsize=(16, 12))
     axes = axes.flatten()
     
-    metricas = ['accuracy', 'precision', 'recall', 'f1', 'auc', 'mcc']
-    titulos = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'AUC-ROC', 'MCC']
+    metricas = ['accuracy', 'precision', 'recall', 'specificity', 'f1', 'auc', 'mcc']
+    titulos = ['Accuracy', 'Precision', 'Recall', 'Especificidad', 'F1-Score', 'AUC-ROC', 'MCC']
     
     modelos = list(resultados_sin.keys())
     x = np.arange(len(modelos))
@@ -618,6 +624,10 @@ def figura_comparacion_smote(resultados_sin, resultados_con,
         ax.legend(fontsize=8)
         ax.set_ylim(0, 1)
         ax.grid(axis='y', alpha=0.3)
+    
+    # Ocultar subplots vacíos
+    for j in range(len(metricas), len(axes)):
+        axes[j].axis('off')
     
     plt.suptitle('8. Comparación de Rendimiento: Sin vs Con SMOTE/SFS',
                  fontsize=14, fontweight='bold', y=1.02)
@@ -646,7 +656,7 @@ def figura_roc_smote(resultados_sin, resultados_con, y_test,
     ax1.plot([0, 1], [0, 1], 'k--', lw=2)
     ax1.set_xlim([-0.05, 1.0])
     ax1.set_ylim([0.0, 1.05])
-    ax1.set_title('Sin SMOTE/SFS', fontsize=12, fontweight='bold')
+    ax1.set_title('Without SMOTE/SFS', fontsize=12, fontweight='bold')
     ax1.set_xlabel('1 - Especificidad')
     ax1.set_ylabel('Sensibilidad')
     ax1.legend(loc='lower right', fontsize=8)
@@ -662,13 +672,13 @@ def figura_roc_smote(resultados_sin, resultados_con, y_test,
     ax2.plot([0, 1], [0, 1], 'k--', lw=2)
     ax2.set_xlim([-0.05, 1.0])
     ax2.set_ylim([0.0, 1.05])
-    ax2.set_title('Con SMOTE/SFS', fontsize=12, fontweight='bold')
+    ax2.set_title('With SMOTE/SFS', fontsize=12, fontweight='bold')
     ax2.set_xlabel('1 - Especificidad')
     ax2.set_ylabel('Sensibilidad')
     ax2.legend(loc='lower right', fontsize=8)
     ax2.grid(True, alpha=0.3)
     
-    plt.suptitle('9. Curvas ROC: Comparación SMOTE/SFS',
+    plt.suptitle('9. ROC Curves: SMOTE/SFS Comparison',
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
@@ -713,11 +723,11 @@ def figura_comparacion_final(resultados_sin, resultados_con,
     """
     Figura 11: Comparación final entre enfoques (Sin vs Con SMOTE/SFS).
     """
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))
     
     # Calcular promedios por métrica
-    metricas = ['accuracy', 'precision', 'recall', 'f1', 'auc', 'mcc']
-    metric_names = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'AUC-ROC', 'MCC']
+    metricas = ['accuracy', 'precision', 'recall', 'specificity', 'f1', 'auc', 'mcc']
+    metric_names = ['Accuracy', 'Precision', 'Recall', 'Especificidad', 'F1-Score', 'AUC-ROC', 'MCC']
     
     promedios_sin = [np.mean([resultados_sin[m][met] for m in resultados_sin.keys()]) 
                      for met in metricas]
@@ -727,16 +737,16 @@ def figura_comparacion_final(resultados_sin, resultados_con,
     x = np.arange(len(metric_names))
     width = 0.35
     
-    bars1 = ax.bar(x - width/2, promedios_sin, width, label='Sin SMOTE/SFS',
+    bars1 = ax.bar(x - width/2, promedios_sin, width, label='Without SMOTE/SFS',
                   color='coral', edgecolor='black')
-    bars2 = ax.bar(x + width/2, promedios_con, width, label='Con SMOTE/SFS',
+    bars2 = ax.bar(x + width/2, promedios_con, width, label='With SMOTE/SFS',
                   color='steelblue', edgecolor='black')
     
-    ax.set_ylabel('Score Promedio', fontsize=12)
-    ax.set_title('11. Comparación Final: Sin vs Con SMOTE/SFS\n(Promedio de 5 Modelos)',
+    ax.set_ylabel('Average Score', fontsize=12)
+    ax.set_title('11. Final Comparison: Without vs With SMOTE/SFS\n(Average of 5 Models)',
                  fontsize=14, fontweight='bold')
     ax.set_xticks(x)
-    ax.set_xticklabels(metric_names, fontsize=11)
+    ax.set_xticklabels(metric_names, fontsize=11, rotation=15, ha='right')
     ax.legend(fontsize=11)
     ax.set_ylim(0, 1)
     ax.grid(axis='y', alpha=0.3)
@@ -762,11 +772,11 @@ def figura_comparacion_modelos(resultados, save_path='figura_comparacion.png'):
     """
     Visualización comparativa de métricas entre modelos.
     """
-    fig, axes = plt.subplots(2, 3, figsize=(14, 9))
+    fig, axes = plt.subplots(3, 3, figsize=(16, 12))
     axes = axes.flatten()
     
-    metricas = ['accuracy', 'precision', 'recall', 'f1', 'auc', 'mcc']
-    titulos = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'AUC-ROC', 'MCC']
+    metricas = ['accuracy', 'precision', 'recall', 'specificity', 'f1', 'auc', 'mcc']
+    titulos = ['Accuracy', 'Precision', 'Recall', 'Especificidad', 'F1-Score', 'AUC-ROC', 'MCC']
     
     modelos = list(resultados.keys())
     
@@ -786,7 +796,11 @@ def figura_comparacion_modelos(resultados, save_path='figura_comparacion.png'):
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002,
                    f'{val:.3f}', ha='center', va='bottom', fontsize=8)
     
-    plt.suptitle('Comparación de Métricas entre Modelos', 
+    # Ocultar subplots vacíos
+    for j in range(len(metricas), len(axes)):
+        axes[j].axis('off')
+    
+    plt.suptitle('Comparison of Metrics Between Models', 
                  fontsize=14, fontweight='bold', y=1.02)
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
@@ -812,8 +826,8 @@ def figura_curvas_roc(resultados, y_test, save_path='figura_roc.png'):
     plt.plot([0, 1], [0, 1], 'k--', lw=2, label='Random (AUC = 0.500)')
     plt.xlim([-0.05, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('Tasa de Falsos Positivos (1 - Especificidad)', fontsize=11)
-    plt.ylabel('Tasa de Verdaderos Positivos (Sensibilidad)', fontsize=11)
+    plt.xlabel('False Positive Rate (1 - Especificidad)', fontsize=11)
+    plt.ylabel('True Positive Rate (Sensibilidad)', fontsize=11)
     plt.title('Curvas ROC Comparativas', fontsize=13, fontweight='bold')
     plt.legend(loc='lower right', fontsize=9)
     plt.grid(True, alpha=0.3)
@@ -1021,7 +1035,7 @@ def tabla_multiclase(df, X, y):
     print("\n" + "="*100)
     print("TABLA: Métricas de Clasificación Multiclase por Categoría Diagnóstica")
     print("="*100)
-    print(f"{'Categoría':<30} {'Precision':<15} {'Recall':<15} {'F1-Score':<15} {'Muestras':<10}")
+    print(f"{'Categoría':<30} {'Precisión':<15} {'Sensibilidad':<15} {'F1-Score':<15} {'Muestras':<10}")
     print("-"*100)
     
     for cat, p, r, f, s in zip(categorias, precision, recall, f1, support):
